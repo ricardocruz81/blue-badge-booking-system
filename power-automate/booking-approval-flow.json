@@ -1,0 +1,58 @@
+{
+  "name": "Blue Badge Booking Approval",
+  "description": "Sends confirmation or rejection emails when a booking status changes in the BlueBadgeBookings SharePoint list",
+  "trigger": {
+    "type": "SharePoint_ItemModified",
+    "inputs": {
+      "siteAddress": "https://yourorg.sharepoint.com/sites/yoursitename",
+      "listName": "BlueBadgeBookings",
+      "triggerCondition": "BookingStatus ne 'Pending'"
+    }
+  },
+  "actions": [
+    {
+      "step": 1,
+      "name": "Condition_CheckStatus",
+      "type": "Switch",
+      "expression": "@triggerBody()?['BookingStatus']?['Value']",
+      "cases": {
+        "Confirmed": [
+          {
+            "name": "Email_BookingConfirmed",
+            "type": "SendEmail",
+            "inputs": {
+              "to": "@triggerBody()?['ApplicantEmail']",
+              "subject": "✅ Blue Badge Booking Confirmed – @{triggerBody()?['BookingDate']}",
+              "body": "<p>Dear @{triggerBody()?['ApplicantName']},</p><p>Your Blue Badge booking has been <strong>confirmed</strong>.</p><table><tr><td><b>Date:</b></td><td>@{formatDateTime(triggerBody()?['BookingDate'], 'dddd dd MMMM yyyy')}</td></tr><tr><td><b>Time:</b></td><td>@{triggerBody()?['TimeSlot']?['Value']}</td></tr><tr><td><b>Service:</b></td><td>@{triggerBody()?['ServiceType']?['Value']}</td></tr><tr><td><b>Badge Number:</b></td><td>@{triggerBody()?['BadgeNumber']}</td></tr></table><p>Please bring your Blue Badge on the day.</p><p>If you need to cancel, please do so at least 24 hours in advance via the booking app.</p>",
+              "isHtml": true
+            }
+          }
+        ],
+        "Rejected": [
+          {
+            "name": "Email_BookingRejected",
+            "type": "SendEmail",
+            "inputs": {
+              "to": "@triggerBody()?['ApplicantEmail']",
+              "subject": "❌ Blue Badge Booking – Unable to Confirm",
+              "body": "<p>Dear @{triggerBody()?['ApplicantName']},</p><p>Unfortunately we are unable to confirm your booking for <strong>@{formatDateTime(triggerBody()?['BookingDate'], 'dddd dd MMMM yyyy')}</strong> at <strong>@{triggerBody()?['TimeSlot']?['Value']}</strong>.</p><p><b>Reason:</b> @{triggerBody()?['RejectionReason']}</p><p>Please use the booking app to select an alternative date or time slot, or contact us if you need assistance.</p>",
+              "isHtml": true
+            }
+          }
+        ],
+        "Cancelled": [
+          {
+            "name": "Email_BookingCancelled",
+            "type": "SendEmail",
+            "inputs": {
+              "to": "@triggerBody()?['ApplicantEmail']",
+              "subject": "Blue Badge Booking Cancelled",
+              "body": "<p>Your booking for @{formatDateTime(triggerBody()?['BookingDate'], 'dd/MM/yyyy')} at @{triggerBody()?['TimeSlot']?['Value']} has been cancelled as requested.</p>",
+              "isHtml": true
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
